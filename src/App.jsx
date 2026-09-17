@@ -43,7 +43,13 @@ function App() {
       if (filter === "completed") return todo.completed;
       return true;
     })
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    .sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1; // no date → last
+      if (!b.dueDate) return -1; // no date → last
+
+      return new Date(a.dueDate) - new Date(b.dueDate);
+    });
 
   return (
     <TodoProvider
