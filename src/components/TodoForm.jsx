@@ -11,6 +11,7 @@ function TodoForm() {
     if (!todo) return;
     addTodo({ todo, completed: false, dueDate: date });
     setTodo("");
+    setDate("");
   };
 
   return (
