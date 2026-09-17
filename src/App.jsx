@@ -55,7 +55,7 @@ function App() {
     <TodoProvider
       value={{ todos, addTodo, updateTodo, deleteTodo, toggleComplete }}
     >
-      <div className="bg-[#F5E6D3] min-h-screen py-8">
+      <div className="bg-[#F5E6D3] min-h-dvh w-full overflow-x-hidden px-3 py-4 sm:px-4">
         <div className="w-full max-w-2xl mx-auto border border-[#C8B8A6] shadow-md rounded-lg px-4 py-4 text-[#172033] bg-[#FFF9F0]">
           <h1 className="text-2xl font-bold text-center mb-8 mt-2">
             Manage Your Todos
@@ -64,7 +64,7 @@ function App() {
             {/* Todo form goes here */}
             <TodoForm />
           </div>
-          <div className="flex gap-2 mb-4 justify-center">
+          <div className="flex flex-wrap gap-2 mb-4 justify-center">
             {[
               ["all", "All Tasks"],
               ["pending", "Pending"],
