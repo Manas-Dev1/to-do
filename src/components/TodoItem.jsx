@@ -1,14 +1,21 @@
-﻿import React, { useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { useTodo } from "../contexts";
 import ConfirmDialog from "./ConfirmDialog";
 function TodoItem({ todo }) {
   const [isTodoEditable, setTodoEditable] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [showCompleteConfirmation, setShowCompleteConfirmation] = useState(false);
+  const [showCompleteConfirmation, setShowCompleteConfirmation] =
+    useState(false);
   const [editConfirmation, setEditConfirmation] = useState(null);
   const [pendingDueDate, setPendingDueDate] = useState(null);
   const [todoMsg, setTodoMsg] = useState(todo.todo);
   const todoInputRef = useRef(null);
+  useEffect(() => {
+    if (isTodoEditable) {
+      todoInputRef.current?.focus();
+      // todoInputRef.current?.select();
+    }
+  }, [isTodoEditable]);
   const { updateTodo, deleteTodo, toggleComplete, todos } = useTodo();
   const formattedPendingDueDate = pendingDueDate
     ? new Date(`${pendingDueDate}T00:00:00`).toLocaleDateString()
@@ -26,7 +33,14 @@ function TodoItem({ todo }) {
   const editTodo = () => {
     if (!todoInputRef.current?.reportValidity()) return;
 
-    const normalizedTodo = todoMsg.trim().toLocaleLowerCase();
+    const trimmedTodo = todoMsg.trim();
+    if (trimmedTodo === todo.todo) {
+      setTodoEditable(false);
+      setEditConfirmation(null);
+      return;
+    }
+
+    const normalizedTodo = trimmedTodo.toLocaleLowerCase();
     const isDuplicate = todos.some(
       (item) =>
         item.id !== todo.id &&
@@ -217,7 +231,7 @@ function TodoItem({ todo }) {
       <ConfirmDialog
         open={showDeleteConfirmation}
         title="Delete this task?"
-        message={`Are you sure you want to delete â€œ${todo.todo}â€? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${todo.todo}"? This action cannot be undone.`}
         confirmLabel="Proceed"
         cancelLabel="Cancel"
         danger
@@ -229,7 +243,11 @@ function TodoItem({ todo }) {
       />
       <ConfirmDialog
         open={editConfirmation !== null}
-        title={editConfirmation === "duplicate" ? "Task already exists" : "Save task changes?"}
+        title={
+          editConfirmation === "duplicate"
+            ? "Task already exists"
+            : "Save task changes?"
+        }
         message={
           editConfirmation === "duplicate"
             ? `A task named “${todoMsg.trim()}” is already on your list. Do you want to use this name anyway?`

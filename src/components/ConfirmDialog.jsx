@@ -35,12 +35,15 @@ function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
-        className="w-full max-w-sm rounded-xl border border-[#C8B8A6] bg-[#FFF9F0] p-5 text-[#172033] shadow-2xl"
+        className="w-full max-w-sm min-w-0 rounded-xl border border-[#C8B8A6] bg-[#FFF9F0] p-5 text-[#172033] shadow-2xl"
       >
         <h2 id="confirm-dialog-title" className="text-lg font-bold">
           {title}
         </h2>
-        <p id="confirm-dialog-message" className="mt-2 text-sm text-[#526071]">
+        <p
+          id="confirm-dialog-message"
+          className="mt-2 wrap-break-words wrap-anywhere text-sm text-[#526071]"
+        >
           {message}
         </p>
         <div className="mt-6 flex justify-end gap-2">
