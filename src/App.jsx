@@ -5,9 +5,10 @@ import { TodoForm, TodoItem } from "./components";
 
 function App() {
   const [todos, setTodos] = useState([]);
+  const [todosLoaded, setTodosLoaded] = useState(false);
   const [filter, setFilter] = useState("all");
   const addTodo = (todo) => {
-    setTodos((prev) => [{ id: Date.now(), ...todo }, ...prev]);
+    setTodos((prev) => [{ id: crypto.randomUUID(), ...todo }, ...prev]);
   };
   const updateTodo = (id, todo) => {
     setTodos((prev) =>
@@ -27,15 +28,26 @@ function App() {
   };
 
   useEffect(() => {
-    const todos = JSON.parse(localStorage.getItem("todos"));
-    if (todos && todos.length > 0) {
-      setTodos(todos);
+    try {
+      const savedTodos = JSON.parse(localStorage.getItem("todos") || "[]");
+      if (Array.isArray(savedTodos)) {
+        setTodos(savedTodos);
+      }
+    } catch {
+      // Ignore invalid saved data and start with an empty list.
+    } finally {
+      setTodosLoaded(true);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
+    if (!todosLoaded) return;
+    try {
+      localStorage.setItem("todos", JSON.stringify(todos));
+    } catch {
+      // Keep the app usable when storage is unavailable or full.
+    }
+  }, [todos, todosLoaded]);
 
   const filteredTodos = todos
     .filter((todo) => {

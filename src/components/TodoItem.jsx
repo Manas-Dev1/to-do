@@ -1,15 +1,52 @@
-import React, { useState } from "react";
+﻿import React, { useRef, useState } from "react";
 import { useTodo } from "../contexts";
+import ConfirmDialog from "./ConfirmDialog";
 function TodoItem({ todo }) {
   const [isTodoEditable, setTodoEditable] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showCompleteConfirmation, setShowCompleteConfirmation] = useState(false);
+  const [editConfirmation, setEditConfirmation] = useState(null);
+  const [pendingDueDate, setPendingDueDate] = useState(null);
   const [todoMsg, setTodoMsg] = useState(todo.todo);
+  const todoInputRef = useRef(null);
   const { updateTodo, deleteTodo, toggleComplete, todos } = useTodo();
-  const editTodo = () => {
-    updateTodo(todo.id, { ...todo, todo: todoMsg });
+  const formattedPendingDueDate = pendingDueDate
+    ? new Date(`${pendingDueDate}T00:00:00`).toLocaleDateString()
+    : "no date";
+  const saveEdit = () => {
+    updateTodo(todo.id, { ...todo, todo: todoMsg.trim() });
     setTodoEditable(false);
+    setEditConfirmation(null);
+  };
+  const cancelEdit = () => {
+    setTodoMsg(todo.todo);
+    setTodoEditable(false);
+    setEditConfirmation(null);
+  };
+  const editTodo = () => {
+    if (!todoInputRef.current?.reportValidity()) return;
+
+    const normalizedTodo = todoMsg.trim().toLocaleLowerCase();
+    const isDuplicate = todos.some(
+      (item) =>
+        item.id !== todo.id &&
+        item.todo.trim().toLocaleLowerCase() === normalizedTodo,
+    );
+
+    if (isDuplicate) {
+      setEditConfirmation("duplicate");
+      return;
+    }
+
+    setEditConfirmation("save");
   };
   const toggleCompleted = () => {
-    toggleComplete(todo.id);
+    if (todo.completed) {
+      toggleComplete(todo.id);
+      return;
+    }
+
+    setShowCompleteConfirmation(true);
   };
 
   return (
@@ -17,15 +54,27 @@ function TodoItem({ todo }) {
       className={`flex flex-col gap-2 border border-black/10 rounded-lg px-3 py-1.5 shadow-sm shadow-white/50 duration-300 text-black sm:flex-row sm:items-center sm:gap-x-3 ${todo.completed ? "text-[#65756A] bg-[#E5F1E8] line-through " : "bg-white"}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="relative inline-flex shrink-0 group/mark">
+          <input
+            type="checkbox"
+            name=""
+            id={`mark-${todo.id}`}
+            aria-label="Mark todo as complete"
+            className="cursor-pointer bg-[#5B9A6F]"
+            checked={todo.completed}
+            onChange={toggleCompleted}
+          />
+          {todo.completed && (
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs font-normal text-white opacity-0 shadow transition-opacity group-hover/mark:opacity-100"
+            >
+              Completed
+            </span>
+          )}
+        </span>
         <input
-          type="checkbox"
-          name=""
-          id=""
-          className="shrink-0 cursor-pointer bg-[#5B9A6F]"
-          checked={todo.completed}
-          onChange={toggleCompleted}
-        />
-        <input
+          ref={todoInputRef}
           type="text"
           name=""
           id=""
@@ -34,22 +83,23 @@ function TodoItem({ todo }) {
           readOnly={!isTodoEditable}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
+              e.preventDefault();
               editTodo();
             }
           }}
+          minLength={1}
+          maxLength={100}
+          pattern="^(?=.*[a-zA-Z0-9])[a-zA-Z0-9 ]+$"
           onChange={(e) => setTodoMsg(e.target.value)}
+          required
         />
       </div>
+
       <div className="flex w-full gap-2 sm:w-auto">
         <input
           type="date"
-          value={todo.dueDate}
-          onChange={(e) =>
-            updateTodo(todo.id, {
-              ...todo,
-              dueDate: e.target.value,
-            })
-          }
+          value={pendingDueDate ?? todo.dueDate}
+          onChange={(e) => setPendingDueDate(e.target.value)}
           className="min-w-0 flex-1 ring ring-black/40 px-2 py-1 rounded-sm text-xs bg-[#F4C95D]/40 sm:w-auto"
           readOnly={todo.completed}
         />
@@ -71,20 +121,20 @@ function TodoItem({ todo }) {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               stroke="#000000"
-              stroke-width="0.00024000000000000003"
+              strokeWidth="0.00024000000000000003"
               className="w-5 h-5"
             >
-              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
               <g
                 id="SVGRepo_tracerCarrier"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               ></g>
               <g id="SVGRepo_iconCarrier">
                 {" "}
                 <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
                   d="M18.1716 1C18.702 1 19.2107 1.21071 19.5858 1.58579L22.4142 4.41421C22.7893 4.78929 23 5.29799 23 5.82843V20C23 21.6569 21.6569 23 20 23H4C2.34315 23 1 21.6569 1 20V4C1 2.34315 2.34315 1 4 1H18.1716ZM4 3C3.44772 3 3 3.44772 3 4V20C3 20.5523 3.44772 21 4 21L5 21L5 15C5 13.3431 6.34315 12 8 12L16 12C17.6569 12 19 13.3431 19 15V21H20C20.5523 21 21 20.5523 21 20V6.82843C21 6.29799 20.7893 5.78929 20.4142 5.41421L18.5858 3.58579C18.2107 3.21071 17.702 3 17.1716 3H17V5C17 6.65685 15.6569 8 14 8H10C8.34315 8 7 6.65685 7 5V3H4ZM17 21V15C17 14.4477 16.5523 14 16 14L8 14C7.44772 14 7 14.4477 7 15L7 21L17 21ZM9 3H15V5C15 5.55228 14.5523 6 14 6H10C9.44772 6 9 5.55228 9 5V3Z"
                   fill="#0F0F0F"
                 ></path>{" "}
@@ -96,18 +146,18 @@ function TodoItem({ todo }) {
               version="1.1"
               id="Capa_1"
               xmlns="http://www.w3.org/2000/svg"
-              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xmlnsXlink="http://www.w3.org/1999/xlink"
               viewBox="-29.7 -29.7 554.34 554.34"
-              xml:space="preserve"
+              xmlSpace="preserve"
               stroke="#000000"
-              stroke-width="3.4645520000000003"
+              strokeWidth="3.4645520000000003"
               className="w-5 h-5"
             >
-              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
               <g
                 id="SVGRepo_tracerCarrier"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               ></g>
               <g id="SVGRepo_iconCarrier">
                 {" "}
@@ -125,21 +175,22 @@ function TodoItem({ todo }) {
         </button>
         <button
           className="inline-flex shrink-0 px-1 justify-center items-center"
-          onClick={() => deleteTodo(todo.id)}
+          onClick={() => setShowDeleteConfirmation(true)}
+          aria-label="Delete todo"
         >
           <svg
             viewBox="-0.96 -0.96 25.92 25.92"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             stroke="#000000"
-            stroke-width="0.144"
+            strokeWidth="0.144"
             className="w-3.5 h-3.5"
           >
-            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
             <g
               id="SVGRepo_tracerCarrier"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             ></g>
             <g id="SVGRepo_iconCarrier">
               {" "}
@@ -151,6 +202,56 @@ function TodoItem({ todo }) {
           </svg>
         </button>
       </div>
+      <ConfirmDialog
+        open={showCompleteConfirmation}
+        title="Complete this task?"
+        message="This will mark your task as completed. Do you want to proceed?"
+        confirmLabel="Proceed"
+        cancelLabel="Cancel"
+        onCancel={() => setShowCompleteConfirmation(false)}
+        onConfirm={() => {
+          toggleComplete(todo.id);
+          setShowCompleteConfirmation(false);
+        }}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirmation}
+        title="Delete this task?"
+        message={`Are you sure you want to delete â€œ${todo.todo}â€? This action cannot be undone.`}
+        confirmLabel="Proceed"
+        cancelLabel="Cancel"
+        danger
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={() => {
+          deleteTodo(todo.id);
+          setShowDeleteConfirmation(false);
+        }}
+      />
+      <ConfirmDialog
+        open={editConfirmation !== null}
+        title={editConfirmation === "duplicate" ? "Task already exists" : "Save task changes?"}
+        message={
+          editConfirmation === "duplicate"
+            ? `A task named “${todoMsg.trim()}” is already on your list. Do you want to use this name anyway?`
+            : "Are you sure you want to save your changes to this task?"
+        }
+        confirmLabel={editConfirmation === "duplicate" ? "Save anyway" : "Save"}
+        cancelLabel="Cancel"
+        onCancel={cancelEdit}
+        onConfirm={saveEdit}
+      />
+      <ConfirmDialog
+        open={pendingDueDate !== null}
+        title="Change due date?"
+        message={`Are you sure you want to change the due date to ${formattedPendingDueDate}?`}
+        confirmLabel="Change date"
+        cancelLabel="Cancel"
+        onCancel={() => setPendingDueDate(null)}
+        onConfirm={() => {
+          updateTodo(todo.id, { ...todo, dueDate: pendingDueDate });
+          setPendingDueDate(null);
+        }}
+      />
     </div>
   );
 }
