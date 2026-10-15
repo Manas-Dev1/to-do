@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useTodo } from "../contexts";
 import ConfirmDialog from "./ConfirmDialog";
 
 function TodoForm() {
   const [todo, setTodo] = useState("");
+  const todoInputRef = useRef(null);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [showDuplicateConfirmation, setShowDuplicateConfirmation] =
     useState(false);
@@ -20,6 +21,18 @@ function TodoForm() {
     e.preventDefault();
     const normalizedTodo = todo.trim().toLocaleLowerCase();
     if (!normalizedTodo) return;
+    const isValidTodo = /^[a-zA-Z0-9][a-zA-Z0-9 '.,()\[\]{}:-]*$/.test(
+      todo.trim(),
+    );
+    todoInputRef.current.setCustomValidity(
+      isValidTodo
+        ? ""
+        : "Start with a letter or number. You can then use letters, numbers, spaces, and these characters: ' . , ( ) [ ] { } : -",
+    );
+    if (!isValidTodo) {
+      todoInputRef.current.reportValidity();
+      return;
+    }
 
     const isDuplicate = todos.some(
       (item) => item.todo.trim().toLocaleLowerCase() === normalizedTodo,
@@ -38,14 +51,17 @@ function TodoForm() {
       className="flex flex-col gap-3 justify-center mx-auto md:flex-row md:gap-0"
     >
       <input
+        ref={todoInputRef}
         type="text"
         placeholder="Write Todo"
         className="w-full border border-black/30 rounded-lg md:rounded-l-lg md:rounded-r-none px-3 outline-none duration-150 bg-white py-1.5 text-[#172033]"
         value={todo}
-        onChange={(e) => setTodo(e.target.value)}
+        onChange={(e) => {
+          setTodo(e.target.value);
+          todoInputRef.current.setCustomValidity("");
+        }}
         minLength={1}
         maxLength={100}
-        pattern="^(?=.*[a-zA-Z0-9])[a-zA-Z0-9 ]+$"
         required
       />
       <div className="flex w-full md:w-auto">
